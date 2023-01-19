@@ -1,0 +1,103 @@
+name: open-pr-slack-action
+description: 'Sends a message showing all open PRs to a given slack channel'
+inputs:
+  slack-token:
+    description: 'Slack token'
+    required: true
+  slack-channel:
+    description: 'Slack channel'
+    required: true
+runs:
+    using: 'composite'
+    steps:
+      - name: Get all open PRs
+        shell: bash
+        id: get-open-prs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_LIST=$(gh pr list --json number,title,url,assignees --state OPEN --limit 100 --search 'is:pr is:open draft:false')
+          echo "pr-details=$(echo $PR_LIST | jq -r '.[] | "• \\<\(.url)\\|\(.title)> - by \((.assignees | if . != [] then .[].login else "🫥" end))" | gsub("\\\\";"")' | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_OUTPUT
+          echo "pr-list=$PR_LIST" >> $GITHUB_OUTPUT
+      - name: get amount of all open prs from github
+        shell: bash
+        id: get-open-prs-amount
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "pr-amount=$(echo '${{steps.get-open-prs.outputs.pr-list}}' | jq length)" >> $GITHUB_OUTPUT
+      - name: Send message with 1 PR to Slack API
+        if: ${{ steps.get-open-prs-amount.outputs.pr-amount == 1 }}
+        uses: archive/github-actions-slack@v2.6.0
+        with:
+          slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
+          slack-channel: ${{ inputs.slack-channel }}
+          slack-blocks: >-
+            [
+              {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Open Pull Requests 🫢",
+                    "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.get-open-prs-amount.outputs.pr-amount }} pull request(s) open in <https://github.com/${{ github.repository }}|${{ github.repository }}> 🤓"
+                }
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.get-open-prs.outputs.pr-details }}"
+                }
+              }
+            ]
+
+      - name: Send message with PRs to Slack API
+        if: ${{ steps.get-open-prs-amount.outputs.pr-amount > 1 }}
+        uses: archive/github-actions-slack@v2.6.0
+        with:
+          slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
+          slack-channel: ${{ inputs.slack-channel }}
+          slack-blocks: >-
+            [
+              {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Open Pull Requests 🫢️‍",
+                    "emoji": true
+                }
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.get-open-prs-amount.outputs.pr-amount }} pull request(s) open in <https://github.com/${{ github.repository }}|${{ github.repository }}> 🤓"
+                }
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.get-open-prs.outputs.pr-details }}"
+                }
+              }
+            ]
+      - name: Result from "Send Message"
+        shell: bash
+        run: echo "The result was ${{ steps.notify.outputs.slack-result }}"
