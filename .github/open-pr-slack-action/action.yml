@@ -17,7 +17,9 @@ runs:
           GH_TOKEN: ${{ github.token }}
         run: |
           PR_LIST=$(gh pr list --json number,title,url,assignees --state OPEN --limit 100 --search 'is:pr is:open draft:false')
-          echo "pr-details=$(echo $PR_LIST | jq -r '.[] | "• \\<\(.url)\\|\(.title)> - by \((.assignees | if . != [] then .[].login else "🫥" end))" | gsub("\\\\";"")' | sed 's/,$//')" >> $GITHUB_OUTPUT
+          echo "pr-details<<EOF" >> $GITHUB_ENV
+          echo "$(echo $PR_LIST | jq -r '.[] | "• \\<\(.url)\\|\(.title)> - by \((.assignees | if . != [] then .[].login else "🫥" end))" | gsub("\\\\";"")' | sed 's/,$//')" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           echo "pr-list=$PR_LIST" >> $GITHUB_OUTPUT
       - name: get amount of all open prs from github
         shell: bash
@@ -56,7 +58,7 @@ runs:
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.get-open-prs.outputs.pr-details }}"
+                    "text": "${{ env.pr-details }}"
                 }
               }
             ]
@@ -94,7 +96,7 @@ runs:
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.get-open-prs.outputs.pr-details }}"
+                    "text": "${{ env.pr-details }}"
                 }
               }
             ]
