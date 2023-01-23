@@ -17,9 +17,8 @@ jobs:
     name: Slack - open PRs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
       - name: slack-open-prs
-        uses: they-consulting/gh-action-open-pr-slack/.github/open-pr-slack-action@main
+        uses: they-consulting/gh-action-open-pr-slack@main
         with:
           slack-token: ${{ secrets.SLACK_TOKEN }}
           slack-channel: ###SLACK CHANNEL ID###
