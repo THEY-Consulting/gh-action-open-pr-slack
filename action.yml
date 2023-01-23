@@ -16,7 +16,7 @@ runs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PR_LIST=$(gh pr list --json number,title,url,assignees --state OPEN --limit 100 --search 'is:pr is:open draft:false')
+          PR_LIST=$(gh pr list --json number,title,url,assignees --state OPEN --limit 100 --search 'is:pr is:open draft:false' --repo ${{github.repository}})
           echo "pr-details<<EOF" >> $GITHUB_ENV
           echo "$(echo $PR_LIST | jq -r '.[] | "• \\<\(.url)\\|\(.title)> - by \((.assignees | if . != [] then .[].login else "🫥" end))" | gsub("\\\\";"")' | sed 's/,$//')" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
