@@ -21,6 +21,34 @@ runs:
           echo "$(echo $PR_LIST | jq -r '.[] | "• \\<\(.url)\\|\(.title)> - by \((.assignees | if . != [] then .[].login else "🫥" end))" | gsub("\\\\";"")' | sed 's/,$//')" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           echo "pr-list=$PR_LIST" >> $GITHUB_OUTPUT
+
+      - name: Get Reviews states for PRs
+        shell: bash
+        id: get-pr-reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_REVIEWS=$(gh pr list --json number,title,url --state OPEN --limit 100 --search 'is:pr is:open draft:false' --repo ${{github.repository}})    
+          echo "PR_REVIEWS looks like this $PR_REVIEWS"
+          numbers=$(echo $PR_REVIEWS | jq -r '.[] | .number')
+          echo "pr-reviews<<EOF" >> $GITHUB_ENV
+          for i in $numbers;
+          do
+            echo "i is $i"
+            title=$(echo "$PR_REVIEWS" | jq --arg i "$i" -r '.[] | select(.number == ($i | tonumber)) | .title')
+            echo "title is $title"
+            url=$(echo "$PR_REVIEWS" | jq --arg i "$i" -r '.[] | select(.number == ($i | tonumber)) | .url')
+            echo "url is $url"
+            pr_reviews=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{github.repository}}/pulls/$i/reviews)
+            echo "*State for PR <$url|$i> is:*" >> $GITHUB_ENV
+            echo "$(echo $pr_reviews | jq -r '.[] | select(.state == "CHANGES_REQUESTED" or .state == "APPROVED") | "• \((if (.state == "APPROVED" ) then "✅" else "❌" end)) \(.state) at \(.submitted_at)" | gsub("\\\\";"")' | sed 's/,$//')" >> $GITHUB_ENV
+          done
+          echo "EOF" >> $GITHUB_ENV
+          
+
       - name: get amount of all open prs from github
         shell: bash
         id: get-open-prs-amount
@@ -31,7 +59,6 @@ runs:
 
       - name: Send message with PRs to Slack API
         id: notify
-        if: ${{ steps.get-open-prs-amount.outputs.pr-amount > 1 }}
         uses: archive/github-actions-slack@v2.6.0
         with:
           slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
@@ -67,6 +94,21 @@ runs:
                 }
               }
             ]
-      - name: Result from "Send Message"
-        shell: bash
-        run: echo "The result was ${{ steps.notify.outputs.slack-result }}"
+
+      - name: Send Thread Message
+        uses: archive/github-actions-slack@master
+        with:
+          slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
+          slack-channel: ${{ fromJson(steps.notify.outputs.slack-result).response.channel }}
+          slack-optional-thread_ts: ${{ fromJson(steps.notify.outputs.slack-result).response.message.ts }}
+          slack-blocks: >-
+            [
+              {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ env.pr-reviews }}"
+                }
+              }
+            ]
+  
