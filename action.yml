@@ -53,7 +53,7 @@ runs:
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.get-open-prs-amount.outputs.pr-amount }} pull request(s) open in <https://github.com/${{ github.repository }}|${{ github.repository }}> 🤓"
+                    "text": "${{ steps.get-open-prs-amount.outputs.pr-amount }} pull requests open in <https://github.com/${{ github.repository }}|${{ github.repository }}> 🤓"
                 }
               },
               {
