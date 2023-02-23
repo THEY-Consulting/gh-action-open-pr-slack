@@ -29,6 +29,7 @@ runs:
         run: |
           echo "pr-amount=$(echo '${{steps.get-open-prs.outputs.pr-list}}' | jq length)" >> $GITHUB_OUTPUT
       - name: Send message with 1 PR to Slack API
+        id: notify
         if: ${{ steps.get-open-prs-amount.outputs.pr-amount == 1 }}
         uses: archive/github-actions-slack@v2.6.0
         with:
@@ -64,6 +65,7 @@ runs:
             ]
 
       - name: Send message with PRs to Slack API
+        id: notify-multiple
         if: ${{ steps.get-open-prs-amount.outputs.pr-amount > 1 }}
         uses: archive/github-actions-slack@v2.6.0
         with:
