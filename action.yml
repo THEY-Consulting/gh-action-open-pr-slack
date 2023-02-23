@@ -28,44 +28,9 @@ runs:
           GH_TOKEN: ${{ github.token }}
         run: |
           echo "pr-amount=$(echo '${{steps.get-open-prs.outputs.pr-list}}' | jq length)" >> $GITHUB_OUTPUT
-      - name: Send message with 1 PR to Slack API
-        id: notify
-        if: ${{ steps.get-open-prs-amount.outputs.pr-amount == 1 }}
-        uses: archive/github-actions-slack@v2.6.0
-        with:
-          slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
-          slack-channel: ${{ inputs.slack-channel }}
-          slack-blocks: >-
-            [
-              {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Open Pull Requests 🫢",
-                    "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.get-open-prs-amount.outputs.pr-amount }} pull request(s) open in <https://github.com/${{ github.repository }}|${{ github.repository }}> 🤓"
-                }
-              },
-              {
-                "type": "divider"
-              },
-              {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ env.pr-details }}"
-                }
-              }
-            ]
 
       - name: Send message with PRs to Slack API
-        id: notify-multiple
+        id: notify
         if: ${{ steps.get-open-prs-amount.outputs.pr-amount > 1 }}
         uses: archive/github-actions-slack@v2.6.0
         with:
@@ -104,4 +69,4 @@ runs:
             ]
       - name: Result from "Send Message"
         shell: bash
-        run: echo "The result was ${{ steps.notify.outputs.slack-result }} ${{ steps.notify-multiple.outputs.slack-result }}"
+        run: echo "The result was ${{ steps.notify.outputs.slack-result }}"
