@@ -59,6 +59,7 @@ runs:
 
       - name: Send message with PRs to Slack API
         id: notify
+        if: ${{ steps.get-open-prs.outputs.pr-details != '' }}
         uses: archive/github-actions-slack@v2.6.0
         with:
           slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
@@ -96,6 +97,7 @@ runs:
             ]
 
       - name: Send Thread Message
+        if: ${{ steps.get-open-prs.outputs.pr-details != '' }}
         uses: archive/github-actions-slack@master
         with:
           slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
