@@ -60,7 +60,7 @@ runs:
       - name: Send message with PRs to Slack API
         id: notify
         if: ${{ env.pr-details != '' }}
-        uses: archive/github-actions-slack@v2.6.0
+        uses: archive/github-actions-slack@v2.9.0
         with:
           slack-bot-user-oauth-access-token: ${{ inputs.slack-token }}
           slack-channel: ${{ inputs.slack-channel }}
